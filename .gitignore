@@ -1,4 +1,8 @@
 .idea/
 .ipynb_checkpoints/
 venv/
+dist/
+src/__pycache__/
 Untitled.ipynb
+*.pyc
+*.egg-info

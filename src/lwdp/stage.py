@@ -6,7 +6,7 @@ import re
 from pathlib import Path
 from typing import Dict
 
-from src.cache import Cache
+from src.lwdp.cache import Cache
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -74,7 +74,7 @@ class _Stage:
         return self.function(*args, **self.raw_ancestors, **{k: v() for k, v in self.stage_ancestors.items()})
 
 
-def Stage(function=None, **kwargs):
+def stage(function=None, **kwargs):
     if function:
         return _Stage(function)
     else:
