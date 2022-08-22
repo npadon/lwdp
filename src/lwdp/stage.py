@@ -55,7 +55,9 @@ class _Stage:
         self.function = function
         self.cache = None
         if kwargs.pop('cache', None):
-            self.cache = Cache()
+            cache_format = kwargs.pop('cache_format', 'csv')
+            subdir_qualifier = '.'.join([inspect.getmodule(self.function).__name__, self.function.__name__])
+            self.cache = Cache(format=cache_format, subdir=subdir_qualifier)
         self.raw_ancestors: Dict[str, str] = {k: v for k, v in kwargs.items() if isinstance(v, str)}
 
         # get all ancestor stages
@@ -70,16 +72,14 @@ class _Stage:
             return self.function(*args, **self.raw_ancestors, **{i[0]: i[1] for i in ancestry})
 
         current_func_name = self.function.__name__
+        logger.info(f"Executing stage {current_func_name}")
         if self.cache is not None:
-            logger.info(f"Attempting cache read {self.hash_path} for {current_func_name}")
             result = self.cache.read(self.hash_path)
             if result is None:
-                logger.info(f"Cache miss for {self.hash_path}, running stage {current_func_name}")
+                logger.info(f"Cache miss, running full stage {current_func_name}")
                 result = _compute_stage()
-                logger.info(f"Stage {current_func_name} run, writing cache to {self.hash_path}")
                 self.cache.write(result, self.hash_path)
             return result
-        logger.info(f"Running non-cached stage {current_func_name}")
         return _compute_stage()
 
 

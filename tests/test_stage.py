@@ -27,6 +27,6 @@ class TestStage(unittest.TestCase):
 
         # run the simple pipeline
         some_stage()
-        output_path_for_cacheing = some_stage.cache.output_path / some_stage.hash_path
+        output_path_for_cacheing = some_stage.cache.output_path / f"{some_stage.hash_path}.{some_stage.cache.format}"
         self.assertTrue(output_path_for_cacheing.exists())  # check that cache written
         os.remove(output_path_for_cacheing)
