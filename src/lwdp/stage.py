@@ -6,6 +6,8 @@ import re
 from pathlib import Path
 from typing import Dict
 
+from joblib import Parallel, delayed
+
 from src.lwdp.cache import Cache
 
 logging.basicConfig(level=logging.INFO)
@@ -28,6 +30,7 @@ class _Stage:
         MD5 is an arbitrary choice, we are only using hashlib to allow updates of the hash"""
         h = hashlib.md5()
         h.update(self._src_bytes)
+        # TODO (NP) - ideally we could use the *content* of the data to hash this stage, not just the fname
         raw_ancestors = [v.encode() for v in self.raw_ancestors.values()]
         for raw_ancestor in raw_ancestors:
             h.update(raw_ancestor)
@@ -59,19 +62,25 @@ class _Stage:
         self.stage_ancestors: Dict[str, _Stage] = {k: v for k, v in kwargs.items() if isinstance(v, _Stage)}
 
     def __call__(self, *args):
+        def _paralleL_call(k, v):
+            return k, v()
+
+        def _compute_stage():
+            ancestry = Parallel(n_jobs=4)(delayed(_paralleL_call)(k, v) for k, v in self.stage_ancestors.items())
+            return self.function(*args, **self.raw_ancestors, **{i[0]: i[1] for i in ancestry})
+
         current_func_name = self.function.__name__
         if self.cache is not None:
             logger.info(f"Attempting cache read {self.hash_path} for {current_func_name}")
             result = self.cache.read(self.hash_path)
             if result is None:
                 logger.info(f"Cache miss for {self.hash_path}, running stage {current_func_name}")
-                result = self.function(*args, **self.raw_ancestors, **{k: v() for k, v in self.stage_ancestors.items()})
+                result = _compute_stage()
                 logger.info(f"Stage {current_func_name} run, writing cache to {self.hash_path}")
                 self.cache.write(result, self.hash_path)
-
             return result
         logger.info(f"Running non-cached stage {current_func_name}")
-        return self.function(*args, **self.raw_ancestors, **{k: v() for k, v in self.stage_ancestors.items()})
+        return _compute_stage()
 
 
 def stage(function=None, **kwargs):
