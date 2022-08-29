@@ -8,7 +8,7 @@ from typing import Dict
 
 from joblib import Parallel, delayed
 
-from src.lwdp.cache import Cache
+from .cache import Cache
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
