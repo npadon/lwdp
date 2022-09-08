@@ -37,7 +37,7 @@ def stg_read_format_raw(**kwargs) -> pd.DataFrame:
 
 
 # read from a previous stage and cache
-@stage(basic_raw=stg_read_format_raw, cache=True, format='parquet')
+@stage(basic_raw=stg_read_format_raw, cache=True, cache_format='parquet')
 def stg_format_more(**kwargs) -> pd.DataFrame:
     raw = kwargs.get('basic_raw')
     raw['new_analysis_column'] = 3
@@ -52,7 +52,7 @@ def stg_final_process(**kwargs) -> pd.DataFrame:
     return result
 
 
-final_process()
+stg_final_process()
 ```
 
 Just call the last stage in the pipeline (as you would any other function) to run all ancestors, reading/writing from

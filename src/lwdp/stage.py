@@ -24,14 +24,28 @@ class _Stage:
         no_docstring_src = re.sub(re.compile(r'""".*"""'), '', no_whitespace_src)
         return no_docstring_src.encode()
 
+    @staticmethod
+    def _file_hash_str(path: Path) -> str:
+        """ Returns a str based on the tuple of (fname, fsize, f_lastmodified).
+        Ideally we could open each file and hash the contents but we use this as a quicker
+        solution (to avoid opening large files)"""
+        if not path.exists():
+            logger.warning(f"Raw path {path} not found! Check filesystem.")
+            return str(path)
+
+        stat_result = path.stat()
+        hashed_quantity = (str(path), stat_result.st_size, stat_result.st_mtime)
+        logger.debug(f"Hashed quantity for raw stage: {hashed_quantity}")
+        return str(hashed_quantity)
+
     @property
     def _single_stage_hash(self):
         """ Returns the MD5 hash of this stage's function's code, plus any raw ancestors.
-        MD5 is an arbitrary choice, we are only using hashlib to allow updates of the hash"""
+        MD5 is an arbitrary choice, we are only using hashlib to allow updates of the hash
+        """
         h = hashlib.md5()
         h.update(self._src_bytes)
-        # TODO (NP) - ideally we could use the *content* of the data to hash this stage, not just the fname
-        raw_ancestors = [v.encode() for v in self.raw_ancestors.values()]
+        raw_ancestors = [self._file_hash_str(Path(v)).encode() for v in self.raw_ancestors.values()]
         for raw_ancestor in raw_ancestors:
             h.update(raw_ancestor)
         return h
